@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -15,34 +15,38 @@ import (
 // Post request struct
 type record struct {
 	ApiKey string `json:"apiKey"`
-	Email string `json:"email"`
+	Email  string `json:"email"`
 	Header string `json:"received"`
 }
 
 // Result reply struct
 type Reply struct {
-	Email string `json:"email"`
+	Email  string `json:"email"`
 	Header string `json:"received"`
 	Domain string `json:"domain"`
-	IP string `json:"sender-IP"`
+	IP     string `json:"sender-IP"`
 	Result string `json:"result"`
 }
 
 // Array of valid/invalid API keys
-var validAPIKeys = map[string]bool {
-	"0000": true,
-}
+var validAPIKeys = map[string]bool{}
 
 func main() {
-		  // Setup logfile
-		  tDate := time.Now()
-		  var sLogFile string = "logs/spf-" + tDate.Format("2006-01-02") + ".log"
-		  fpLog, err := os.OpenFile(sLogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
-		  if err != nil {
-					 log.Fatal("Error opening/creating logfile %v", err)
-		  }
-		  defer fpLog.Close()
-		  log.SetOutput(fpLog)
+	// Load valid API keys from .keys file
+	err := LoadKeys(".keys")
+	if err != nil {
+		log.Fatal("Error opening API key file %v", err)
+	}
+
+	// Setup logfile
+	tDate := time.Now()
+	var sLogFile string = "logs/spf-" + tDate.Format("2006-01-02") + ".log"
+	fpLog, err := os.OpenFile(sLogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatal("Error opening/creating logfile %v", err)
+	}
+	defer fpLog.Close()
+	log.SetOutput(fpLog)
 
 	log.Printf("Starting spf service ...")
 
@@ -74,7 +78,7 @@ func HandleHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"error": "Unauthorized; requires valid API key"}`))
 		log.Printf("Error: Invalid API key. %s", post.ApiKey)
 		return
-	// Valid API Key continue
+		// Valid API Key continue
 	} else {
 		// Inspect received header and extract the sender hostname/IP
 		sReceived, err := ExtractSendingServer(post.Header)
@@ -141,12 +145,12 @@ func TraverseSPF(records []string) string {
 				passArr, _ := net.LookupTXT(temp)
 				//fmt.Printf("\n	Found include")
 				expandedSPF = expandedSPF + " " + TraverseSPF(passArr)
-			// Expand redirects
+				// Expand redirects
 			} else if strings.Contains(r, "redirect=") {
 				passArr, _ := net.LookupTXT(strings.Replace(r, "redirect=", "", -1))
 				//fmt.Printf("\n	Found redirect")
 				expandedSPF = expandedSPF + " " + TraverseSPF(passArr)
-			// If contains mx get mx records
+				// If contains mx get mx records
 			} else if strings.Contains(r, "mx:") {
 				//TODO: Add MX expansion
 				// Currently this is just ignoring mx records as if they were invalid
@@ -192,12 +196,11 @@ func Process(sEmail string, sHeader string) (Reply, error) {
 
 	// Now let's only look at IPs
 	for _, el := range SPF {
-		if (strings.Contains(el, "ip4:")) {
+		if strings.Contains(el, "ip4:") {
 			ApprovedIPs = append(ApprovedIPs, el)
 		}
 		//TODO: ipv6
 	}
-	
 
 	// See if received from is valid sender
 	ips, _ := net.LookupIP(sReceived)
@@ -209,7 +212,7 @@ func Process(sEmail string, sHeader string) (Reply, error) {
 			if strings.Contains(el, ip.String()) {
 				bSPFPass = true
 				break
-			// If this is a network block, do lookup
+				// If this is a network block, do lookup
 			} else if strings.Contains(el, "/") {
 				//fmt.Printf("\n	Resolving cidr of %v", el)
 				_, cidrNet, _ := net.ParseCIDR(strings.Replace(strings.Replace(el, "ip4:", "", -1), "ip6:", "", -1))
@@ -263,7 +266,7 @@ func ExtractSendingServer(sHeader string) (string, error) {
 			match := regex.FindStringSubmatch(el)
 
 			if len(match) > 0 {
-                        	h += match[0]
+				h += match[0]
 			}
 		}
 	}
